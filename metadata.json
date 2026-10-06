@@ -1,0 +1,6 @@
+{
+  "name": "Sprint Retrospective App",
+  "description": "Herramienta colaborativa para facilitar retrospectivas de Sprint en equipos Scrum con múltiples dinámicas, votación y plan de acción.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
