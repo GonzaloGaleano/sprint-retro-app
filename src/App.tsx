@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useRetro } from './hooks/useRetro';
+import { useRetro, getShareUrl } from './hooks/useRetro';
+import { isSupabaseConfigured } from './lib/supabase';
 import { SetupRetro } from './components/SetupRetro';
 import { RetroBoard } from './components/RetroBoard';
 import { Summary } from './components/Summary';
@@ -11,16 +12,23 @@ import {
   Plus,
   Github,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Link2,
+  Loader2,
+  Cloud,
+  CloudOff
 } from 'lucide-react';
 
 export default function App() {
   const {
     retro,
+    activeId,
     voterId,
     sortOrder,
     setSortOrder,
     history,
+    syncStatus,
+    syncError,
     createNewRetro,
     loadRetro,
     loadSample,
@@ -40,10 +48,24 @@ export default function App() {
   } = useRetro();
 
   const [currentView, setCurrentView] = useState<'setup' | 'board' | 'summary'>(() => {
-    return retro ? 'board' : 'setup';
+    return retro || activeId ? 'board' : 'setup';
   });
 
   const [showConfirmNew, setShowConfirmNew] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const handleCopyLink = async () => {
+    if (!retro) return;
+    const url = getShareUrl(retro.id);
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      window.prompt('Copiá este link para compartir la retro:', url);
+      return;
+    }
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
 
   const handleStartNew = (params: {
     sprintName: string;
@@ -112,6 +134,43 @@ export default function App() {
           <div className="flex items-center gap-2 sm:gap-3">
             {retro ? (
               <>
+                {isSupabaseConfigured && (
+                  <span
+                    className="hidden sm:inline-flex items-center"
+                    title={
+                      syncStatus === 'synced'
+                        ? 'Sincronizado en tiempo real'
+                        : syncStatus === 'loading'
+                          ? 'Sincronizando…'
+                          : `Error de sincronización${syncError ? `: ${syncError}` : ''}`
+                    }
+                  >
+                    {syncStatus === 'loading' ? (
+                      <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
+                    ) : syncStatus === 'synced' && !syncError ? (
+                      <Cloud className="w-4 h-4 text-emerald-500" />
+                    ) : (
+                      <CloudOff className="w-4 h-4 text-red-500" />
+                    )}
+                  </span>
+                )}
+
+                {isSupabaseConfigured && (
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    title="Copiar link para que otras personas se sumen a esta retro"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                  >
+                    {linkCopied ? (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    ) : (
+                      <Link2 className="w-3.5 h-3.5 text-blue-600" />
+                    )}
+                    <span className="hidden sm:inline">{linkCopied ? '¡Link copiado!' : 'Compartir'}</span>
+                  </button>
+                )}
+
                 {currentView === 'board' ? (
                   <button
                     type="button"
@@ -160,7 +219,46 @@ export default function App() {
 
       {/* Main Body */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-6 sm:py-8">
-        {!retro || currentView === 'setup' ? (
+        {!isSupabaseConfigured && (
+          <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-amber-600" />
+            <span>
+              Supabase no está configurado: la retro solo se guarda en este navegador y no se puede compartir.
+              Definí <code>VITE_SUPABASE_URL</code> y <code>VITE_SUPABASE_ANON_KEY</code> en <code>.env.local</code>.
+            </span>
+          </div>
+        )}
+
+        {!retro && activeId && currentView !== 'setup' ? (
+          <div className="max-w-md mx-auto mt-16 text-center bg-white rounded-2xl border border-slate-200 shadow-2xs p-8 space-y-4">
+            {syncStatus === 'loading' ? (
+              <>
+                <Loader2 className="w-8 h-8 mx-auto text-blue-600 animate-spin" />
+                <p className="text-sm font-semibold text-slate-700">Cargando retrospectiva…</p>
+              </>
+            ) : (
+              <>
+                <AlertCircle className="w-8 h-8 mx-auto text-red-500" />
+                <p className="text-sm font-semibold text-slate-800">
+                  {syncStatus === 'not_found'
+                    ? 'No encontramos esta retrospectiva. Revisá que el link sea correcto.'
+                    : 'No se pudo cargar la retrospectiva.'}
+                </p>
+                {syncError && <p className="text-xs text-slate-500">{syncError}</p>}
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetCurrent();
+                    setCurrentView('setup');
+                  }}
+                  className="px-4 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs cursor-pointer"
+                >
+                  Ir al inicio
+                </button>
+              </>
+            )}
+          </div>
+        ) : !retro || currentView === 'setup' ? (
           <SetupRetro
             currentRetro={retro}
             history={history}
@@ -247,7 +345,9 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>Sprint Retrospective App • Scrum Agile Team Collaboration</span>
           <span className="text-slate-400">
-            Persistencia en LocalStorage • Funciona 100% offline
+            {isSupabaseConfigured
+              ? 'Colaboración en tiempo real • Compartí el link con tu equipo'
+              : 'Persistencia en LocalStorage • Modo local'}
           </span>
         </div>
       </footer>
