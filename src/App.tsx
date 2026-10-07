@@ -88,8 +88,6 @@ export default function App() {
 
   const handleFinalize = () => {
     setCompleted(true);
-    // Notify or offer to start fresh
-    alert('🎉 ¡Retrospectiva finalizada con éxito! Todos los acuerdos y acciones han quedado guardados.');
   };
 
   return (
@@ -276,6 +274,7 @@ export default function App() {
             retro={retro}
             onBackToBoard={() => setCurrentView('board')}
             onFinalize={handleFinalize}
+            onReopen={() => setCompleted(false)}
           />
         ) : (
           <RetroBoard

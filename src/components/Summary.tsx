@@ -13,19 +13,22 @@ import {
   Users,
   Award,
   Sparkles,
-  Download
+  Download,
+  RotateCcw
 } from 'lucide-react';
 
 interface SummaryProps {
   retro: RetroSession;
   onBackToBoard: () => void;
   onFinalize: () => void;
+  onReopen: () => void;
 }
 
 export const Summary: React.FC<SummaryProps> = ({
   retro,
   onBackToBoard,
-  onFinalize
+  onFinalize,
+  onReopen
 }) => {
   const [copied, setCopied] = useState(false);
 
@@ -84,6 +87,15 @@ export const Summary: React.FC<SummaryProps> = ({
               <span className="capitalize px-2 py-0.5 rounded bg-white/10 font-medium">
                 {retro.method.replace(/-/g, ' ')}
               </span>
+              {retro.completed && (
+                <>
+                  <span>•</span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-400/20 text-emerald-200 font-semibold">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Finalizada
+                  </span>
+                </>
+              )}
             </div>
           </div>
 
@@ -290,16 +302,33 @@ export const Summary: React.FC<SummaryProps> = ({
           <span>Volver al tablero</span>
         </button>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <button
-            type="button"
-            onClick={onFinalize}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-xs transition-colors cursor-pointer"
-          >
-            <CheckCircle2 className="w-4 h-4" />
-            <span>Finalizar retrospectiva</span>
-          </button>
-        </div>
+        {retro.completed ? (
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            <span className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold text-sm">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Retrospectiva finalizada</span>
+            </span>
+            <button
+              type="button"
+              onClick={onReopen}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold text-sm hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              <RotateCcw className="w-4 h-4" />
+              <span>Reabrir</span>
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={onFinalize}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-xs transition-colors cursor-pointer"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Finalizar retrospectiva</span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
